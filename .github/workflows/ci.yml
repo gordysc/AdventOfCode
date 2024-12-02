@@ -15,7 +15,7 @@ jobs:
           dotnet-version: 9.0.x
       - name: Run all the things
         run: |
-            find . -name '*.csproj' -exec dirname {} \; | sort | while read dir; do
+            find . -name '*.csproj' -not -path "./Shared/*" -exec dirname {} \; | sort | while read dir; do
               cd $dir
               dotnet run || echo "Failed to run $dir"
               cd -
