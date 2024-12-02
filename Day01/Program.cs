@@ -3,6 +3,8 @@
 var input = File.ReadAllLines("Input.txt");
 var solution = new Solution(input);
 
+Console.WriteLine("Day 01");
+
 await solution.SolveAsync();
 
 internal sealed class Solution(string[] input) : AbstractSolution
