@@ -8,7 +8,7 @@ Console.WriteLine("Day 03");
 
 await solution.SolveAsync();
 
-internal sealed partial class Solution(string input) : AbstractSolution
+internal sealed class Solution(string input) : AbstractSolution
 {
     private static readonly Regex Pattern = new(@"\bmul\((\d+),(\d+)\)");
     
