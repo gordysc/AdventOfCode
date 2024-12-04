@@ -15,7 +15,7 @@ internal sealed class Solution(char[][] input) : AbstractSolution
 {
     protected override Task<string> SolvePart1Async()
     {
-        var length = input[0].Length;
+        var width = input[0].Length;
         var height = input.Length;
 
         var total = 0;
@@ -36,7 +36,7 @@ internal sealed class Solution(char[][] input) : AbstractSolution
         foreach (var (row, column) in coordinates)
         {
             // Check forward
-            if (column <= length - 4 && input[row][column + 1] == 'M' && input[row][column + 2] == 'A' && input[row][column + 3] == 'S')
+            if (column <= width - 4 && input[row][column + 1] == 'M' && input[row][column + 2] == 'A' && input[row][column + 3] == 'S')
                 total++;
             // Check backward
             if (column >= 3 && input[row][column - 1] == 'M' && input[row][column - 2] == 'A' && input[row][column - 3] == 'S')
@@ -48,13 +48,13 @@ internal sealed class Solution(char[][] input) : AbstractSolution
             if (row <= height - 4 && input[row + 1][column] == 'M' && input[row + 2][column] == 'A' && input[row + 3][column] == 'S')
                 total++;
             // Check diagonal down right
-            if (row <= height - 4 && column <= length - 4 && input[row + 1][column + 1] == 'M' && input[row + 2][column + 2] == 'A' && input[row + 3][column + 3] == 'S')
+            if (row <= height - 4 && column <= width - 4 && input[row + 1][column + 1] == 'M' && input[row + 2][column + 2] == 'A' && input[row + 3][column + 3] == 'S')
                 total++;
             // Check diagonal down left
             if (row <= height - 4 && column >= 3 && input[row + 1][column - 1] == 'M' && input[row + 2][column - 2] == 'A' && input[row + 3][column - 3] == 'S')
                 total++;
             // Check diagonal up right
-            if (row >= 3 && column <= length - 4 && input[row - 1][column + 1] == 'M' && input[row - 2][column + 2] == 'A' && input[row - 3][column + 3] == 'S')
+            if (row >= 3 && column <= width - 4 && input[row - 1][column + 1] == 'M' && input[row - 2][column + 2] == 'A' && input[row - 3][column + 3] == 'S')
                 total++;
             // Check diagonal up left
             if (row >= 3 && column >= 3 && input[row - 1][column - 1] == 'M' && input[row - 2][column - 2] == 'A' && input[row - 3][column - 3] == 'S')
@@ -66,7 +66,7 @@ internal sealed class Solution(char[][] input) : AbstractSolution
 
     protected override Task<string> SolvePart2Async()
     {
-        var length = input[0].Length;
+        var width = input[0].Length;
         var height = input.Length;
 
         var total = 0;
@@ -86,7 +86,7 @@ internal sealed class Solution(char[][] input) : AbstractSolution
 
         foreach (var (row, column) in coordinates)
         {
-            if (row < 1 || row > height - 2 || column < 1 || column > length - 2)
+            if (row < 1 || row > height - 2 || column < 1 || column > width - 2)
                 continue;
 
             // M.S
