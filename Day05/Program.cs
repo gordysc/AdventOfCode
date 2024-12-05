@@ -36,10 +36,8 @@ internal sealed class Solution(string[] input) : AbstractSolution
         {
             var sorted = CorrectOrder(rules, update);
             
-            if (update.SequenceEqual(sorted))
-                continue;
-            
-            total += int.Parse(sorted[sorted.Count / 2]);
+            if (update.SequenceEqual(sorted) is false)
+                total += int.Parse(sorted[sorted.Count / 2]);
         }
         
         return Task.FromResult(total.ToString());
