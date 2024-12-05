@@ -13,8 +13,15 @@ internal sealed class Solution(string[] input) : AbstractSolution
     {
         var (rules, updates) = ParseInput(input);
         
-        var valid = updates.Where(update => update.SequenceEqual(CorrectOrder(rules, update))).ToList();
-        var total = valid.Aggregate(0, (acc, update) => acc + int.Parse(update[update.Count / 2]));
+        var total = 0;
+
+        foreach (var update in updates)
+        {
+            var sorted = CorrectOrder(rules, update);
+            
+            if (update.SequenceEqual(sorted))
+                total += int.Parse(sorted[sorted.Count / 2]);
+        }
         
         return Task.FromResult(total.ToString());
     }
@@ -22,15 +29,18 @@ internal sealed class Solution(string[] input) : AbstractSolution
     protected override Task<string> SolvePart2Async()
     {
         var (rules, updates) = ParseInput(input);
-        
-        var invalids = updates.Where(update => update.SequenceEqual(CorrectOrder(rules, update)) is false).ToList();
-        
-        var total = invalids.Aggregate(0, (acc, update) =>
+
+        var total = 0;
+
+        foreach (var update in updates)
         {
-            var invalid = CorrectOrder(rules, update).Select(int.Parse).ToList();
+            var sorted = CorrectOrder(rules, update);
             
-            return acc + invalid[invalid.Count / 2];
-        });
+            if (update.SequenceEqual(sorted))
+                continue;
+            
+            total += int.Parse(sorted[sorted.Count / 2]);
+        }
         
         return Task.FromResult(total.ToString());
     }
