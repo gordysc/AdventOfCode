@@ -13,24 +13,7 @@ internal sealed class Solution(string[] input) : AbstractSolution
     {
         var (rules, updates) = ParseInput(input);
         
-        var valid = updates.Where(update =>
-        {
-            for (var loop = 0; loop < update.Count; loop++)
-            {
-                if (loop == 0)
-                    continue;
-                if (rules.TryGetValue(update[loop], out var rule) is false)
-                    continue;
-
-                var previous = update[..loop];
-
-                if (rule.Any(r => previous.Contains(r)))
-                    return false;
-            }
-
-            return true;
-        }).ToList();
-        
+        var valid = updates.Where(update => update.SequenceEqual(CorrectOrder(rules, update))).ToList();
         var total = valid.Aggregate(0, (acc, update) => acc + int.Parse(update[update.Count / 2]));
         
         return Task.FromResult(total.ToString());
@@ -40,23 +23,7 @@ internal sealed class Solution(string[] input) : AbstractSolution
     {
         var (rules, updates) = ParseInput(input);
         
-        var invalids = updates.Where(update =>
-        {
-            for (var loop = 0; loop < update.Count; loop++)
-            {
-                if (loop == 0)
-                    continue;
-                if (rules.TryGetValue(update[loop], out var rule) is false)
-                    continue;
-
-                var previous = update[..loop];
-
-                if (rule.Any(r => previous.Contains(r)))
-                    return true;
-            }
-
-            return false;
-        }).ToList();
+        var invalids = updates.Where(update => update.SequenceEqual(CorrectOrder(rules, update)) is false).ToList();
         
         var total = invalids.Aggregate(0, (acc, update) =>
         {
@@ -70,34 +37,17 @@ internal sealed class Solution(string[] input) : AbstractSolution
 
     private static List<string> CorrectOrder(Dictionary<string, List<string>> rules, List<string> update)
     {
-        var result = new List<string>(update.Count);
-        
-        for (var loop = 0; loop < update.Count; loop++)
-        {
-            if (loop == 0)
-            {
-                result.Add(update[loop]);
-                continue;
-            }
+        var sorted = update.ToList();
             
-            if (rules.TryGetValue(update[loop], out var rule) is false)
-            {
-                result.Add(update[loop]);
-                continue;
-            }
-
-            if (result.FirstOrDefault(x => rule.Contains(x)) is not null)
-            {
-                var index = result.FindIndex(x => rule.Contains(x));
-                result.Insert(index, update[loop]);
-            }
-            else
-            {
-                result.Add(update[loop]);
-            }
-        }
+        sorted.Sort((x, y) =>
+        {
+            if (rules.TryGetValue(x, out var value) is false)
+                return 1;
+                
+            return value.Contains(y) ? -1 : 1;
+        });
         
-        return result;
+        return sorted;
     }
 
     private static (Dictionary<string, List<string>>, List<List<string>>) ParseInput(string[] input)
