@@ -1,156 +1,141 @@
 ﻿using Shared;
 
-var input = File.ReadAllText("Input.txt")
-    .Split(Environment.NewLine)
-    .Select(x => x.ToCharArray())
-    .ToArray();
-
+var input = File.ReadAllLines("Input.txt");
 var solution = new Solution(input);
 
 Console.WriteLine("Day 06");
 
 await solution.SolveAsync();
 
-internal sealed class Solution(char[][] input) : AbstractSolution
+internal sealed class Solution(string[] input) : AbstractSolution
 {
+    private int Height => input.Length;
+    private int Width => input[0].Length;
+    
+    private Guard Guard = input
+        .SelectMany((line, y) => line.Select((c, x) => (c, x, y)))
+        .Where(t => t.c is '^' or 'v' or '<' or '>')
+        .Select(t => new Guard { Position = new Position(t.x, t.y), Direction = t.c })
+        .Single();
+    
+    private List<Position> Obstructions = input
+        .SelectMany((line, y) => line.Select((c, x) => (c, x, y)))
+        .Where(t => t.c == '#')
+        .Select(t => new Position(t.x, t.y))
+        .ToList();
+    
     protected override Task<string> SolvePart1Async()
     {
-        var evaluation = EvaluateGrid(FindGuard(input), input);
+        var positions = GetGuardPath();
         
-        if (evaluation.PathResult != PathResult.Exited)
-            throw new InvalidOperationException("Path did not exit the grid");
-        
-        return Task.FromResult(evaluation.Visits.Keys.Count.ToString());
+        return Task.FromResult(positions.Count.ToString());
     }
-    
+
     protected override Task<string> SolvePart2Async()
     {
-        var start = FindGuard(input);
-        var height = input.Length;
+        var positions = GetGuardPath();
 
-        var visits = EvaluateGrid(start, input).Visits.Keys;
-
-        var obstructions = visits.AsParallel().Count(i =>
+        var answer = positions.Count(p =>
         {
-            if (i == start)
-                return false;
-            
-            var grid = new char[height][];
-            
-            for (var loop = 0; loop < height; loop++)
-                grid[loop] = (char[]) input[loop].Clone(); ;
-            
-            grid[i.Y][i.X] = '#';
+            var guard = Guard with { };
+            var obstructions = new HashSet<Position>(Obstructions) { p };
+            var result = PathResult.Unknown;
+            var traveled = new HashSet<(Position, char)> { (guard.Position, guard.Direction) };
 
-            return EvaluateGrid(start, grid).PathResult == PathResult.Loop;
+            while (result == PathResult.Unknown)
+            {
+                var next = guard.GetNextPosition();
+
+                if (next.IsWithinBounds(Width, Height) is false)
+                    result = PathResult.Exited;
+                else if (obstructions.Contains(next))
+                    guard.Turn();
+                else if (traveled.Add((next, guard.Direction)) is false)
+                    result = PathResult.Loop;
+                else
+                    guard.Move();
+            }
+
+            return result == PathResult.Loop;
         });
-
-        return Task.FromResult(obstructions.ToString());
+        
+        return Task.FromResult(answer.ToString());
     }
-    
-    private static GridEvaluation EvaluateGrid(Point start, char[][] grid)
+
+    private HashSet<Position> GetGuardPath()
     {
-        var result = new GridEvaluation();
-        
-        var point = start;
-        var direction = grid[point.Y][point.X];
-        
-        var width = grid[0].Length;
-        var height = grid.Length;
+        var result = PathResult.Unknown;
+        var guard = Guard with { };
+        var path = new HashSet<Position> { guard.Position };
 
-        result.Visits = new Dictionary<Point, List<char>> { { point, [direction] } };
-
-        while (true)
+        while (result == PathResult.Unknown)
         {
-            var next = CalculateNextPoint(point, direction);
-
-            if (next.X < 0 || next.X >= width || next.Y < 0 || next.Y >= height)
-            {
-                result.PathResult = PathResult.Exited;
-                break;
-            }
+            var next = guard.GetNextPosition();
             
-            var value = grid[next.Y][next.X];
-
-            if (value == '#')
+            if (next.IsWithinBounds(Width, Height) is false)
+                result = PathResult.Exited;
+            else if (Obstructions.Contains(next))
+                guard.Turn();
+            else
             {
-                direction = CalculateNextDirection(direction);
-                continue;
+                guard.Move();
+                path.Add(guard.Position);
             }
-            if (result.Visits.TryGetValue(next, out var directions))
-            {
-                if (directions.Contains(direction))
-                {
-                    result.PathResult = PathResult.Loop;
-                    break;
-                }
-
-                directions.Add(direction);
-            }
-            else            
-            {
-                result.Visits.Add(next, [direction]);
-            }
-            
-            point = next;
         }
 
-        return result;
+        return path;
     }
-    
+}
+
+internal sealed record Position(int X, int Y)
+{
+    public bool IsWithinBounds(int width, int height) => 
+        X >= 0 && X < width && Y >= 0 && Y < height;
+}
+
+internal sealed record Guard
+{
     private const char Up = '^';
     private const char Down = 'v';
     private const char Left = '<';
     private const char Right = '>';
+    
+    public required Position Position { get; set; }
+    public required char Direction { get; set; }
 
-    private static Point CalculateNextPoint(Point current, char direction)
+    public void Move()
     {
-        return direction switch
+        Position = GetNextPosition();
+    }
+    
+    public Position GetNextPosition()
+    {
+        return Direction switch
         {
-            Up => current with { Y = current.Y - 1 },
-            Down => current with { Y = current.Y + 1 },
-            Left => current with { X = current.X - 1 },
-            Right => current with { X = current.X + 1 },
+            Up => Position with { Y = Position.Y - 1 },
+            Down => Position with { Y = Position.Y + 1 },
+            Left => Position with { X = Position.X - 1 },
+            Right => Position with { X = Position.X + 1 },
             _ => throw new InvalidOperationException("Invalid direction")
         };
     }
-
-    private static char CalculateNextDirection(char direction)
+    
+    public void Turn()
     {
-        return direction switch
+        Direction = Direction switch
         {
-            Up or Down => direction == Up ? Right : Left,
-            Left or Right => direction == Left ? Up : Down,
+            Up => Right,
+            Right => Down,
+            Down => Left,
+            Left => Up,
             _ => throw new InvalidOperationException("Invalid direction")
         };
-    }
-
-    private static Point FindGuard(IReadOnlyList<char[]> grid)
-    {
-        for (var y = 0; y < grid.Count; y++)
-        {
-            for (var x = 0; x < grid[y].Length; x++)
-            {
-                if (grid[y][x] != '.' && grid[y][x] != '#')
-                    return new Point(x, y);
-            }
-        }
-
-        throw new InvalidOperationException("Guard not found");
     }
 }
-
-internal sealed record Point(int X, int Y);
 
 internal enum PathResult
 {
     Loop,
     Exited,
     Unknown
-}
-
-internal class GridEvaluation
-{
-    public PathResult PathResult { get; set; } = PathResult.Unknown;
-    public Dictionary<Point, List<char>> Visits { get; set; } = new();
 }
