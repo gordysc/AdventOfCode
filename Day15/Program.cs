@@ -1,6 +1,6 @@
 ﻿using Shared;
 
-var input = File.ReadAllLines("Input.txt");
+var input = File.ReadAllText("Input.txt");
 
 var solution = new Solution(input);
 
@@ -8,133 +8,228 @@ Console.WriteLine("Day 15");
 
 await solution.SolveAsync();
 
-internal sealed class Solution(string[] input) : AbstractSolution
+internal sealed class Solution(string input) : AbstractSolution
 {
     protected override Task<string> SolvePart1Async()
     {
-        var (robot, blocks, directions) = ParseInput(input);
+        var sections = input.Trim().Split("\n\n").ToArray();
+        
+        var grid = sections[0].Split("\n").Select(row => row.ToCharArray()).ToArray();
+        var movements = sections[1].Replace("\n", "").ToCharArray();
+        var builder = new WarehouseBuilder();
 
-        while (directions.Count > 0)
+        for (var row = 0; row < grid.Length; row++)
         {
-            var direction = directions.Dequeue();
-            var (dy, dx) = CalculateDeltas(direction);
-            var candidate = new Coordinates(robot.Coordinates.Row + dy, robot.Coordinates.Column + dx);
-
-            if (blocks.FirstOrDefault(x => x.Contains(candidate.Row, candidate.Column)) is not { } block)
+            for (var col = 0; col < grid[row].Length; col++)
             {
-                robot.Coordinates = candidate;
-                continue;
-            }
-            
-            if (block is Box box)
-            {
-                List<Box> boxes = [box];
-                
-                var next = new Coordinates(box.Coordinates.Row + dy, box.Coordinates.Column + dx);
-                
-                while (blocks.FirstOrDefault(x => x.Contains(next.Row, next.Column)) is Box nextBox)
-                {
-                    boxes.Add(nextBox);
-                    next = new Coordinates(nextBox.Coordinates.Row + dy, nextBox.Coordinates.Column + dx);
-                }
-                
-                if (blocks.FirstOrDefault(x => x.Contains(next.Row, next.Column)) is not Wall)
-                {
-                    boxes.ForEach(x => x.Move(dy, dx));
-                    robot.Coordinates = candidate;
-                }
+                if (grid[row][col] == '@')
+                    builder.SetRobot(row, col);
+                else if (grid[row][col] == '#')
+                    builder.AddWall(row, col, 1);
+                else if (grid[row][col] == 'O')
+                    builder.AddBox(row, col, 1);
             }
         }
+        
+        var warehouse = builder.Build();
+        
+        warehouse.ProcessMovements(movements);
 
-        var result = blocks.OfType<Box>().Sum(x => x.GpsCoordinates);
+        var result = warehouse.Boxes.Sum(x => x.Row * 100 + x.Column);
         
         return Task.FromResult(result.ToString());
     }
 
     protected override Task<string> SolvePart2Async()
     {
-        return Task.FromResult("Not implemented");
-    }
-    
-    private static (int, int) CalculateDeltas(char direction) => direction switch
-    {
-        '^' => (-1, 0),
-        'v' => (1, 0),
-        '>' => (0, 1),
-        '<' => (0, -1),
-        _ => throw new ArgumentException("Invalid direction")
-    };
-    
-    private static (Robot, List<Block>, Queue<char>) ParseInput(string[] input, int width = 1)
-    {
-        var robot = new Robot();
-        var blocks = new List<Block>();
-        var directions = new Queue<char>();
+        var sections = input.Trim().Split("\n\n").ToArray();
         
-        var section = 1;
+        var grid = sections[0].Split("\n").Select(row => row.ToCharArray()).ToArray();
+        var movements = sections[1].Replace("\n", "").ToCharArray();
+        var builder = new WarehouseBuilder();
 
-        for (var row = 0; row < input.Length; row++)
+        for (var row = 0; row < grid.Length; row++)
         {
-            if (string.IsNullOrWhiteSpace(input[row]))
+            for (var col = 0; col < grid[row].Length; col++)
             {
-                section++;
-                continue;
-            }
-            
-            if (section == 1)
-            {
-                for (var col = 0; col < input[row].Length; col++)
-                {
-                    if (input[row][col] == '#')
-                        blocks.Add(new Wall(new Coordinates(row, col), width));
-                    else if (input[row][col] == 'O')
-                        blocks.Add(new Box(new Coordinates(row, col), width));
-                    else if (input[row][col] == '@')
-                        robot.Coordinates = new Coordinates(row, col);
-                }
-            }
-            
-            if (section == 2)
-            {
-                foreach (var c in input[row])
-                    directions.Enqueue(c);
+                if (grid[row][col] == '@')
+                    builder.SetRobot(row, col * 2);
+                else if (grid[row][col] == '#')
+                    builder.AddWall(row, col * 2, 2);
+                else if (grid[row][col] == 'O')
+                    builder.AddBox(row, col * 2, 2);
             }
         }
         
-        return (robot, blocks, directions);
+        var warehouse = builder.Build();
+        
+        warehouse.ProcessMovements(movements);
+
+        var result = warehouse.Boxes.Sum(x => x.Row * 100 + x.Column);
+        
+        return Task.FromResult(result.ToString());
     }
 }
 
-internal sealed class Robot
+internal sealed class Boundaries(int row, int column, int width)
 {
-    public Coordinates Coordinates { get; set; } = new(0, 0);
-}
+    private int Row { get; } = row;
+    private int Column { get; } = column;
 
-internal sealed class Coordinates(int row, int column)
-{
-    public int Row { get; set; } = row;
-    public int Column { get; set; } = column;
-}
+    private int Width { get; } = width;
+    private const int Height = 1;
 
-internal abstract class Block(Coordinates coordinates, int width)
-{
-    public Coordinates Coordinates = coordinates;
-
-    public bool Contains(int row, int column)
+    public bool Overlaps(Boundaries other)
     {
-        return row == Coordinates.Row && 
-               column >= Coordinates.Column && 
-               column < Coordinates.Column + width;
+        return Column < other.Column + other.Width &&
+               Column + Width > other.Column &&
+               Row < other.Row + Height &&
+               Row + Height > other.Row;
     }
 }
 
-internal sealed class Wall(Coordinates coordinates, int width) : Block(coordinates, width);
-internal sealed class Box(Coordinates coordinates, int width) : Block(coordinates, width)
+internal sealed class Wall(int row, int column, int width)
 {
-    public void Move(int dy, int dx)
+    public Boundaries Boundaries => new(row, column, width);
+}
+
+internal sealed class Box(int row, int column, int width, int id)
+{
+    public int Id { get; } = id;
+    public int Row { get; private set; } = row;
+    public int Column { get; private set; } = column;
+    public int Width => width;
+    
+    public Boundaries Boundaries => new(Row, Column, width);
+    
+    public void Move(int dx, int dy)
     {
-        Coordinates = new Coordinates(Coordinates.Row + dy, Coordinates.Column + dx);
+        Column += dx;
+        Row += dy;
+    }
+}
+
+internal sealed class Robot(int row, int column)
+{
+    public int Row { get; private set; } = row;
+    public int Column { get; private set; } = column;
+
+    public void Move(int dx, int dy)
+    {
+        Column += dx;
+        Row += dy;
+    }
+}
+
+internal sealed class WarehouseBuilder
+{
+    private Robot? _robot;
+    private readonly List<Wall> _walls = [];
+    private readonly List<Box> _boxes = [];
+
+    public void SetRobot(int row, int column)
+    {
+        _robot = new Robot(row, column);
     }
     
-    public int GpsCoordinates => Coordinates.Row * 100 + Coordinates.Column;
+    public void AddWall(int row, int column, int width)
+    {
+        _walls.Add(new Wall(row, column, width));
+    }
+    
+    public void AddBox(int row, int column, int width)
+    {
+        _boxes.Add(new Box(row, column, width, _boxes.Count));
+    }
+    
+    public Warehouse Build()
+    {
+        if (_robot == null)
+            throw new InvalidOperationException("Robot is not set");
+        
+        return new Warehouse(_walls, _boxes, _robot);
+    }
+}
+
+internal sealed class Warehouse(List<Wall> walls, List<Box> boxes, Robot robot)
+{
+    private static readonly Dictionary<char, (int x, int y)> Instructions = new()
+    {
+        { '^', (0, -1) },
+        { 'v', (0, 1) },
+        { '<', (-1, 0) },
+        { '>', (1, 0) }
+    };
+    
+    public IReadOnlyList<Box> Boxes => boxes;
+
+    public void ProcessMovements(char[] movements)
+    {
+        foreach (var move in movements)
+        {
+            var instruction = Instructions[move];
+            
+            var position = new Boundaries(
+                row: robot.Row + instruction.y,
+                column: robot.Column + instruction.x,
+                width: 1
+            );
+
+            if (IsWallCollision(position)) continue;
+
+            if (boxes.FirstOrDefault(x => x.Boundaries.Overlaps(position)) is not { } box)
+            {
+                robot.Move(instruction.x, instruction.y);
+                continue;
+            }
+
+            if (MoveBox(box, instruction))
+            {
+                robot.Move(instruction.x, instruction.y);
+            }
+        }
+    }
+
+    private bool IsWallCollision(Boundaries position) =>
+        walls.Any(wall => wall.Boundaries.Overlaps(position));
+
+    private bool MoveBox(Box box, (int x, int y) instruction)
+    {
+        var candidates = new Queue<Box>();
+        var ids = new HashSet<int>();
+
+        candidates.Enqueue(new Box(box.Row + instruction.y, box.Column + instruction.x, box.Width, box.Id));
+
+        while (candidates.Count > 0)
+        {
+            var candidate = candidates.Dequeue();
+
+            if (IsWallCollision(candidate.Boundaries)) 
+                return false;
+
+            var collisions = boxes
+                .Where(b => b.Boundaries.Overlaps(candidate.Boundaries) && b.Id != candidate.Id)
+                .ToList();
+
+            foreach (var collision in collisions)
+            {
+                candidates.Enqueue(new Box(
+                    collision.Row + instruction.y,
+                    collision.Column + instruction.x,
+                    collision.Width,
+                    collision.Id
+                ));
+            }
+
+            ids.Add(candidate.Id);
+        }
+
+        foreach (var id in ids)
+        {
+            var boxToUpdate = boxes.First(b => b.Id == id);
+            boxToUpdate.Move(instruction.x, instruction.y);
+        }
+
+        return true;
+    }
 }
