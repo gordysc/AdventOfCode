@@ -1,67 +1,46 @@
 ﻿using Shared;
 
 var input = File.ReadAllLines("Input.txt");
+
 var solution = new Solution(input);
 
-Console.WriteLine("Day 01");
-
-await solution.SolveAsync();
+solution.Solve();
 
 internal sealed class Solution(string[] input) : AbstractSolution
 {
-    protected override Task<string> SolvePart1Async()
+    protected override string SolvePart1()
     {
-        var (left, right) = ParseInput();
-        
-        left.Sort();
-        right.Sort();
-
-        var total = 0;
-
-        for (var loop = 0; loop < left.Count; loop++)
-            total += Math.Abs(left[loop] - right[loop]);
-        
-        return Task.FromResult(total.ToString());
-    }
-    
-    protected override Task<string> SolvePart2Async()
-    {
-        var (left, right) = ParseInput();
-        
-        var counts = right
-            .GroupBy(x => x)
-            .ToDictionary(x => x.Key, x => x.Count());
-
-        var total = 0;
-
-        foreach (var l in left)
-        {
-            if (counts.TryGetValue(l, out var count))
-                total += l * count;
-        }
-        
-        return Task.FromResult(total.ToString());
-    }
-    
-    private (List<int>, List<int>) ParseInput()
-    {
-        var left = new List<int>(input.Length);
-        var right = new List<int>(input.Length);
+        var previous = -1;
+        var result = 0;
 
         foreach (var line in input)
         {
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
+            var value = int.Parse(line);
 
-            var entries = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            
-            if (entries.Length != 2)
-                throw new InvalidDataException("Invalid input");
-            
-            left.Add(int.Parse(entries[0]));
-            right.Add(int.Parse(entries[1]));
+            if (previous > 0 && value > previous)
+                result++;
+
+            previous = value;
         }
-        
-        return (left, right);
+
+        return result.ToString();
+    }
+
+    protected override string SolvePart2()
+    {
+        var previous = -1;
+        var result = 0;
+
+        for (var loop = 0; loop < input.Length - 2; loop++)
+        {
+            var value = input.Skip(loop).Take(3).Select(int.Parse).Sum();
+            
+            if (previous > 0 && value > previous)
+                result++;
+
+            previous = value;
+        }
+
+        return result.ToString();
     }
 }
