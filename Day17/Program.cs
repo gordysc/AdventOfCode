@@ -19,11 +19,10 @@ internal sealed class Solution(string[] input) : AbstractSolution
         var program = instructions.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(long.Parse)
             .ToArray();
+
+        var result = Execute([a, b, c], program);
         
-        var computer = new Computer(a, b, c, program);
-        var output = computer.Execute();
-        
-        return Task.FromResult(string.Join(',', output));
+        return Task.FromResult(string.Join(',', result));
     }
 
     protected override Task<string> SolvePart2Async()
@@ -40,124 +39,50 @@ internal sealed class Solution(string[] input) : AbstractSolution
         
         queue.Enqueue((0, program.Length - 1));
 
-        while (queue.Count > 0)
+        while (queue.TryDequeue(out var current) && answer < 0)
         {
-            var (value, index) = queue.Dequeue();
-
             for (var i = 0; i < 8; i++)
             {
-                if (answer > 0)
-                    continue;
-                var a = (value << 3) + i;
-                var computer = new Computer(a, b, c, program);
-                var result = computer.Execute();
+                var a = (current.A << 3) + i;
+                var result = Execute([a, b, c], program);
 
-                if (result.SequenceEqual(program[index..]))
-                {
-                    if (index == 0)
-                        answer = a;
-                    else
-                        queue.Enqueue((a, index - 1));
-                }
+                if (result.SequenceEqual(program[current.Index..]) is false)
+                    continue;
+
+                if (current.Index == 0)
+                    answer = a;
+                else
+                    queue.Enqueue((a, current.Index - 1));
             }
         }
 
         return Task.FromResult(answer.ToString());
     }
-}
 
-internal sealed class Computer(long a, long b, long c, long[] program)
-{
-    private long A { get; set; } = a;
-    private long B { get; set; } = b;
-    private long C { get; set; } = c;
-    
-    private long _pointer;
-
-    public List<long> Execute()
+    private static List<long> Execute(long[] registers, long[] program)
     {
         var output = new List<long>();
+        var (a, b, c) = (registers[0], registers[1], registers[2]);
         
-        while (_pointer + 1 <= program.Length - 1)
+        for (long pointer = 0; pointer + 1 < program.Length;)
         {
-            var opcode = GetOpcode();
+            var (opcode, literal) = (program[pointer], program[pointer + 1]);
+            var combo = literal switch { 4 => a, 5 => b, 6 => c, _ => literal };
 
-            if (opcode == 0)
-            {
-                var operand = GetComboOperand();
-        
-                var numerator = A;
-                var denominator = Math.Pow(2, operand);
-        
-                A = (long) Math.Floor(numerator / denominator);
-                _pointer += 2;
-            }
-            else if (opcode == 1)
-            {
-                var operand = GetLiteralOperand();
-                
-                B ^= operand;
-                _pointer += 2;
-            }
-            else if (opcode == 2)
-            {
-                var operand = GetComboOperand();
+            pointer = opcode == 3 && a != 0 ? literal : pointer + 2;
 
-                B = operand % 8;
-                _pointer += 2;
-            }
-            else if (opcode == 3)
+            switch (opcode)
             {
-                if (A == 0)
-                    _pointer += 2;
-                else
-                    _pointer = GetLiteralOperand();
-            }
-            else if (opcode == 4)
-            {
-                B ^= C;
-                _pointer += 2;
-            }
-            else if (opcode == 5)
-            {
-                var operand = GetComboOperand();
-                var result = operand % 8;
-                
-                output.Add(result);
-                _pointer += 2;
-            }
-            else if (opcode == 6)
-            {
-                var operand = GetComboOperand();
-        
-                B = (long) Math.Floor(A / Math.Pow(2, operand));
-                _pointer += 2;
-            }
-            else if (opcode == 7)
-            {
-                var operand = GetComboOperand();
-        
-                C = (long) Math.Floor(A / Math.Pow(2, operand));
-                _pointer += 2;
+                case 0: a = (long)(a / Math.Pow(2, combo)); break;
+                case 1: b ^= literal; break;
+                case 2: b = combo % 8; break;
+                case 4: b ^= c; break;
+                case 5: output.Add(combo % 8); break;
+                case 6: b = (long)(a / Math.Pow(2, combo)); break;
+                case 7: c = (long)(a / Math.Pow(2, combo)); break;
             }
         }
-
+        
         return output;
-    }
-    
-    private long GetOpcode() => program[_pointer];
-    
-    private long GetLiteralOperand() => program[_pointer + 1];
-
-    private long GetComboOperand()
-    {
-        return program[_pointer + 1] switch
-        {
-            < 4 => program[_pointer + 1],
-            4 => A,
-            5 => B,
-            6 => C,
-            _ => throw new InvalidOperationException("Invalid operand")
-        };
     }
 }
