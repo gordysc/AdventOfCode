@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Shared;
+﻿using Shared;
 
 var input = File.ReadAllLines("Input.txt");
 
@@ -22,56 +21,56 @@ internal sealed class Solution(string[] input) : AbstractSolution
     
     protected override Task<string> SolvePart1Async()
     {
-        var bytes = ParseBytes(input);
-        var minimum = FindMinimumSteps(bytes.Take(1024).ToHashSet());
+        var bytes = ParseBytes(input).Take(1024).ToHashSet();
+        var distance = FindShortestDistance(bytes);
         
-        return Task.FromResult(minimum.ToString());
+        return Task.FromResult(distance.ToString());
     }
 
     protected override Task<string> SolvePart2Async()
     {
         var bytes = ParseBytes(input);
-        var unreachable = int.MaxValue;
         
-        for (var loop = 1; loop < input.Length; loop++)
+        var left = 0;
+        var right = bytes.Count;
+        
+        while (left < right)
         {
-            var minimum = FindMinimumSteps(bytes.Take(loop).ToHashSet());
+            var middle = (left + right) / 2;
+            var distance = FindShortestDistance(bytes.Take(middle).ToHashSet());
             
-            if (minimum == int.MaxValue)
-            {
-                unreachable = loop;
-                break;
-            }
+            if (distance == int.MaxValue)
+                right = middle;
+            else
+                left = middle + 1;
         }
+
+        var (x, y) = bytes[left - 1];
         
-        var result = bytes[unreachable - 1];
-        var x = result.X;
-        var y = Height - result.Y;
-        
-        return Task.FromResult($"{x},{y}");
+        return Task.FromResult($"{x},{Height - y}");
     }
 
-    private int FindMinimumSteps(HashSet<Position> bytes)
+    private static int FindShortestDistance(HashSet<Position> bytes)
     {
         var start = new Position(0, Height);
         var finish = new Position(Width, 0);
         var cache = new Dictionary<Position, int>();
         
         var queue = new PriorityQueue<List<Position>, int>();
-        var minimum = int.MaxValue;
+        var distance = int.MaxValue;
         
         queue.Enqueue([start], 0);
 
         while (queue.TryDequeue(out var path,out var steps))
         {
-            if (steps > minimum)
+            if (steps > distance)
                 continue;
 
             var position = path.Last();
             
             if (position == finish)
             {
-                minimum = Math.Min(minimum, steps);
+                distance = Math.Min(distance, steps);
                 continue;
             }
             
@@ -99,18 +98,15 @@ internal sealed class Solution(string[] input) : AbstractSolution
             }
         }
         
-        return minimum;
+        return distance;
     }
-
-    private static List<Position> ParseBytes(string[] input, int limit = -1)
+    
+    private static List<Position> ParseBytes(string[] input)
     {
         var bytes = new List<Position>();
 
         foreach (var line in input)
         {
-            if (limit > 0 && bytes.Count == limit)
-                break;
-            
             var coordinates = line.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(int.Parse)
                 .ToArray();
