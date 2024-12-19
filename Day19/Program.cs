@@ -27,17 +27,58 @@ internal sealed class Solution(string[] input) : AbstractSolution
 
     protected override Task<string> SolvePart2Async()
     {
-        return Task.FromResult("Not implemented");
+        var patterns = input[0]
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .ToList();
+        
+        var designs = input[2..];
+        
+        var worker = new Worker(patterns);
+        var count = worker.CountArrangements(designs.ToList());
+
+        return Task.FromResult(count.ToString());
     }
 }
 
 internal sealed class Worker(List<string> patterns)
 {
-    private readonly Dictionary<string, bool> _cache = new();
+    private readonly Dictionary<string, bool> _possibilities = new();
+    private readonly Dictionary<string, long> _arrangements = new();
     
     public int CountPossibilities(List<string> designs)
     {
         return designs.Count(design => IsPossible(design, 0));
+    }
+
+    public long CountArrangements(List<string> designs)
+    {
+        return designs.Sum(design => CountArrangements(design, 0));
+    }
+    
+    private long CountArrangements(string design, int offset)
+    {
+        if (offset == design.Length)
+            return 1;
+        
+        var remaining = design[offset..];
+
+        if (_arrangements.TryGetValue(remaining, out var result))
+            return result;
+        
+        var count = 0L;
+        
+        foreach (var pattern in patterns)
+        {
+            if (remaining.StartsWith(pattern) is false)
+                continue;
+
+            count += CountArrangements(design, offset + pattern.Length);
+        }
+
+        _arrangements[remaining] = count;
+        
+        return count;
     }
     
     private bool IsPossible(string design, int offset)
@@ -47,7 +88,7 @@ internal sealed class Worker(List<string> patterns)
         
         var remaining = design[offset..];
         
-        if (_cache.TryGetValue(remaining, out var result))
+        if (_possibilities.TryGetValue(remaining, out var result))
             return result;
         
         foreach (var pattern in patterns)
@@ -58,13 +99,13 @@ internal sealed class Worker(List<string> patterns)
             if (IsPossible(design, offset + pattern.Length) is false)
                 continue;
 
-            _cache[remaining] = true;
+            _possibilities[remaining] = true;
             
             break;
         }
         
-        _cache.TryAdd(remaining, false);
+        _possibilities.TryAdd(remaining, false);
         
-        return _cache[remaining];
+        return _possibilities[remaining];
     }
 }
