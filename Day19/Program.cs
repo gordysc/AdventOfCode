@@ -43,12 +43,11 @@ internal sealed class Solution(string[] input) : AbstractSolution
 
 internal sealed class Worker(List<string> patterns)
 {
-    private readonly Dictionary<string, bool> _possibilities = new();
-    private readonly Dictionary<string, long> _arrangements = new();
+    private readonly Dictionary<string, long> _cache = new();
     
     public int CountPossibilities(List<string> designs)
     {
-        return designs.Count(design => IsPossible(design, 0));
+        return designs.Count(design => CountArrangements(design, 0) > 0);
     }
 
     public long CountArrangements(List<string> designs)
@@ -63,7 +62,7 @@ internal sealed class Worker(List<string> patterns)
         
         var remaining = design[offset..];
 
-        if (_arrangements.TryGetValue(remaining, out var result))
+        if (_cache.TryGetValue(remaining, out var result))
             return result;
         
         var count = 0L;
@@ -76,36 +75,8 @@ internal sealed class Worker(List<string> patterns)
             count += CountArrangements(design, offset + pattern.Length);
         }
 
-        _arrangements[remaining] = count;
+        _cache[remaining] = count;
         
         return count;
-    }
-    
-    private bool IsPossible(string design, int offset)
-    {
-        if (offset == design.Length)
-            return true;
-        
-        var remaining = design[offset..];
-        
-        if (_possibilities.TryGetValue(remaining, out var result))
-            return result;
-        
-        foreach (var pattern in patterns)
-        {
-            if (remaining.StartsWith(pattern) is false)
-                continue;
-
-            if (IsPossible(design, offset + pattern.Length) is false)
-                continue;
-
-            _possibilities[remaining] = true;
-            
-            break;
-        }
-        
-        _possibilities.TryAdd(remaining, false);
-        
-        return _possibilities[remaining];
     }
 }
