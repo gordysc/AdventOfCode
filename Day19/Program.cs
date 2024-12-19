@@ -10,50 +10,30 @@ await solution.SolveAsync();
 
 internal sealed class Solution(string[] input) : AbstractSolution
 {
+    private readonly Dictionary<string, long> _cache = new();
+    
+    private readonly List<string> _patterns = input[0]
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(x => x.Trim())
+        .ToList();
+        
+    private readonly string[] _designs = input[2..];
+    
     protected override Task<string> SolvePart1Async()
     {
-        var patterns = input[0]
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim())
-            .ToList();
-        
-        var designs = input[2..];
-        
-        var worker = new Worker(patterns);
-        var count = worker.CountPossibilities(designs.ToList());
-
-        return Task.FromResult(count.ToString());
+        return Task.FromResult(Possibilities.ToString());
     }
 
     protected override Task<string> SolvePart2Async()
     {
-        var patterns = input[0]
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim())
-            .ToList();
-        
-        var designs = input[2..];
-        
-        var worker = new Worker(patterns);
-        var count = worker.CountArrangements(designs.ToList());
-
-        return Task.FromResult(count.ToString());
+        return Task.FromResult(Arrangements.ToString());
     }
-}
-
-internal sealed class Worker(List<string> patterns)
-{
-    private readonly Dictionary<string, long> _cache = new();
     
-    public int CountPossibilities(List<string> designs)
-    {
-        return designs.Count(design => CountArrangements(design, 0) > 0);
-    }
+    private int Possibilities =>
+        _designs.Count(design => CountArrangements(design, 0) > 0);
 
-    public long CountArrangements(List<string> designs)
-    {
-        return designs.Sum(design => CountArrangements(design, 0));
-    }
+    private long Arrangements =>
+        _designs.Sum(design => CountArrangements(design, 0));
     
     private long CountArrangements(string design, int offset)
     {
@@ -67,7 +47,7 @@ internal sealed class Worker(List<string> patterns)
         
         var count = 0L;
         
-        foreach (var pattern in patterns)
+        foreach (var pattern in _patterns)
         {
             if (remaining.StartsWith(pattern) is false)
                 continue;
