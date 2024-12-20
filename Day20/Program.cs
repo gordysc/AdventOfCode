@@ -1,6 +1,9 @@
 ﻿using Shared;
 
-var input = File.ReadAllLines("Input.txt");
+var input = File
+    .ReadAllLines("Input.txt")
+    .Select(x => x.ToCharArray())
+    .ToArray();
 
 var solution = new Solution(input);
 
@@ -8,67 +11,76 @@ Console.WriteLine("Day 20");
 
 await solution.SolveAsync();
 
-internal sealed class Solution(string[] input) : AbstractSolution
+internal sealed class Solution(char[][] input) : AbstractSolution
 {
     protected override Task<string> SolvePart1Async()
     {
-        var raceTrack = CreateRaceTrack(input.Select(x => x.ToCharArray()).ToArray());
-        var walls = 0;
+        var track = CreateRaceTrack(input);
+        var answer = 0;
 
-        for (var x = 0; x < raceTrack.Count; x++)
+        for (var i = 0; i < track.Count - 1; i++)
         {
-            var track = raceTrack[x];
-            
-            for (var j = x + 1; j < raceTrack.Count; j++)
+            for (var j = i + 1; j < track.Count; j++)
             {
-                var candidate = raceTrack[j];
-                var distance = CalculateDistance(track, candidate);
-                var difference = candidate.Distance - track.Distance;
+                if (CalculateDistance(track[i], track[j]) != 2)
+                    continue;
 
-                if (distance == 2 && difference > 100)
-                    walls++;
+                if (j - i > 100)
+                    answer++;
             }
         }
-
-        return Task.FromResult(walls.ToString());
+        
+        return Task.FromResult(answer.ToString());
     }
 
     protected override Task<string> SolvePart2Async()
     {
-        return Task.FromResult("Not implemented");
+        var track = CreateRaceTrack(input);
+        var answer = 0;
+
+        for (var i = 0; i < track.Count - 100 - 1; i++)
+        {
+            for (var j = i + 101; j < track.Count; j++)
+            {
+                var distance = CalculateDistance(track[i], track[j]);
+                 
+                if (distance is < 2 or > 20)
+                    continue;
+
+                if (j - i >= distance + 100)
+                    answer++;
+            }
+        }
+        
+        return Task.FromResult(answer.ToString());
     }
     
-    private static int CalculateDistance(Track a, Track b)
+    private static int CalculateDistance(Location a, Location b)
     {
-        return Math.Abs(a.Location.Row - b.Location.Row) + 
-               Math.Abs(a.Location.Column - b.Location.Column);
+        return Math.Abs(a.Row - b.Row) + Math.Abs(a.Column - b.Column);
     }
     
     private static readonly (int RX, int CX)[] Deltas = [(0, 1), (1, 0), (0, -1), (-1, 0)];
 
-    private static List<Track> CreateRaceTrack(char[][] input)
+    private static List<Location> CreateRaceTrack(char[][] input)
     {
-        var cursor = FindLocation(input, 'S');
-        var start = new Track(cursor, 0);
-        
-        var visited = new HashSet<Location> { cursor };
-        var result = new List<Track> { start };
+        var cursor = FindStart(input, 'S');
+        var track = new List<Location> { cursor };
 
         while (input[cursor.Row][cursor.Column] != 'E')
         {
             cursor = Deltas
                 .Select(x => new Location { Row = cursor.Row + x.RX, Column = cursor.Column + x.CX })
                 .Where(x => x.Row >= 0 && x.Row < input.Length && x.Column >= 0 && x.Column < input[x.Row].Length)
-                .First(x => input[x.Row][x.Column] != '#' && !visited.Contains(x));
+                .First(x => input[x.Row][x.Column] != '#' && !track.Contains(x));
             
-            visited.Add(cursor);
-            result.Add(new Track(cursor, result.Count));
+            track.Add(cursor);
         }
         
-        return result;
+        return track;
     }
 
-    private static Location FindLocation(char[][] input, char c)
+    private static Location FindStart(char[][] input, char c)
     {
         for (var row = 0; row < input.Length; row++)
         {
@@ -81,4 +93,3 @@ internal sealed class Solution(string[] input) : AbstractSolution
 }
 
 internal readonly record struct Location(int Row, int Column);
-internal readonly record struct Track(Location Location, int Distance);
