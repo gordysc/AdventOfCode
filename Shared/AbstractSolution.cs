@@ -5,12 +5,12 @@ namespace Shared;
 
 public abstract class AbstractSolution
 {
-    public async Task SolveAsync()
+    public void Solve()
     {
         var table = new ConsoleTable("Part", "Answer", "Time (ms)");
         
-        var part1 = await TimeAsync(SolvePart1Async);
-        var part2 = await TimeAsync(SolvePart2Async);
+        var part1 = Execute(SolvePart1);
+        var part2 = Execute(SolvePart2);
         
         table.AddRow("Part 1", part1.Answer, part1.ElapsedMilliseconds);
         table.AddRow("Part 2", part2.Answer, part2.ElapsedMilliseconds);
@@ -20,13 +20,13 @@ public abstract class AbstractSolution
         Console.WriteLine();
     }
     
-    protected abstract Task<string> SolvePart1Async();
-    protected abstract Task<string> SolvePart2Async();
+    protected abstract string SolvePart1();
+    protected abstract string SolvePart2();
     
-    private static async Task<SolutionResult> TimeAsync(Func<Task<string>> func)
+    private static SolutionResult Execute(Func<string> func)
     {
         var stopwatch = Stopwatch.StartNew();
-        var result = await func();
+        var result = func();
         
         stopwatch.Stop();
 
