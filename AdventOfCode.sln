@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Day01", "Day01\Day01.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{74A90CF2-2597-4EFB-8737-148DD8FF4E2C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2024", "2024", "{94459AD6-461F-4BC8-9156-D99AD57B056C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2020", "2020", "{94459AD6-461F-4BC8-9156-D99AD57B056C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
