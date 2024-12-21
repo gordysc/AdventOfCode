@@ -45,6 +45,6 @@ internal sealed class Solution(string[] input) : AbstractSolution
             }
         }
         
-        return "Not implemented";
+        return "Not found";
     }
 }
