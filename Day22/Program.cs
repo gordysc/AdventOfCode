@@ -36,16 +36,16 @@ internal sealed class Solution(string[] input) : AbstractSolution
 
     private static int FindMaximumBananas(IEnumerable<List<(int Price, int Diff)>> markets)
     {
-        var totals = new Dictionary<string, int>();
+        var totals = new Dictionary<(int, int, int, int), int>();
 
         foreach (var changes in markets)
         {
-            var seen = new HashSet<string>();
+            var seen = new HashSet<(int, int, int, int)>();
             
             for (var loop = 0; loop < changes.Count - 4; loop++)
             {
                 var values = changes.Skip(loop).Take(4).ToArray();
-                var key = string.Join(',', values.Select(x => x.Diff));
+                var key = (values[0].Diff, values[1].Diff, values[2].Diff, values[3].Diff);
                 var price = values[3].Price;
 
                 if (seen.Add(key))
