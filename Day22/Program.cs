@@ -28,38 +28,35 @@ internal sealed class Solution(string[] input) : AbstractSolution
         var seeds = input.Select(long.Parse).ToList();
         var sequences = seeds.Select(x => GenerateSecretNumber(x, 2_000));
         var changes = sequences.Select(CalculateChanges);
-        var maps = changes.Select(CreatePriceMap).ToList();
-        var answer = FindMaximumBananas(maps);
+        
+        var answer = FindMaximumBananas(changes);
         
         return Task.FromResult(answer.ToString());
     }
 
-    private static int FindMaximumBananas(List<Dictionary<string, int>> maps)
+    private static int FindMaximumBananas(IEnumerable<List<(int Price, int Diff)>> data)
     {
-        var keys = new HashSet<string>();
-        
-        foreach (var map in maps)
-            keys.UnionWith(map.Keys);
-        
-        var totals = keys.Select(seq => maps.Aggregate(0, (acc, map) => acc + map.GetValueOrDefault(seq, 0)));
+        var totals = new Dictionary<string, int>();
 
-        return totals.Max();
-    }
-
-    private static Dictionary<string, int> CreatePriceMap(List<(int Price, int Diff)> changes)
-    {
-        var result = new Dictionary<string, int>();
-
-        for (var loop = 0; loop < changes.Count - 4; loop++)
+        foreach (var changes in data)
         {
-            var values = changes.Skip(loop).Take(4).ToArray();
-            var key = string.Join(',', values.Select(x => x.Diff));
-            var price = values[3].Price;
+            var seen = new HashSet<string>();
+            
+            for (var loop = 0; loop < changes.Count - 4; loop++)
+            {
+                var values = changes.Skip(loop).Take(4).ToArray();
+                var key = string.Join(',', values.Select(x => x.Diff));
+                var price = values[3].Price;
 
-            result.TryAdd(key, price);
+                if (seen.Add(key))
+                {
+                    totals.TryAdd(key, 0);
+                    totals[key] += price;
+                }
+            }
         }
 
-        return result;
+        return totals.Values.Max();
     }
 
     private static List<(int Price, int Diff)> CalculateChanges(List<long> sequence)
