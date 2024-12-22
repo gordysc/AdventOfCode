@@ -27,18 +27,18 @@ internal sealed class Solution(string[] input) : AbstractSolution
     {
         var seeds = input.Select(long.Parse).ToList();
         var sequences = seeds.Select(x => GenerateSecretNumber(x, 2_000));
-        var changes = sequences.Select(CalculateChanges);
+        var markets = sequences.Select(CalculateMarkets);
         
-        var answer = FindMaximumBananas(changes);
+        var answer = FindMaximumBananas(markets);
         
         return Task.FromResult(answer.ToString());
     }
 
-    private static int FindMaximumBananas(IEnumerable<List<(int Price, int Diff)>> data)
+    private static int FindMaximumBananas(IEnumerable<List<(int Price, int Diff)>> markets)
     {
         var totals = new Dictionary<string, int>();
 
-        foreach (var changes in data)
+        foreach (var changes in markets)
         {
             var seen = new HashSet<string>();
             
@@ -59,7 +59,7 @@ internal sealed class Solution(string[] input) : AbstractSolution
         return totals.Values.Max();
     }
 
-    private static List<(int Price, int Diff)> CalculateChanges(List<long> sequence)
+    private static List<(int Price, int Diff)> CalculateMarkets(List<long> sequence)
     {
         var result = new List<(int Price, int Diff)>();
         
