@@ -14,6 +14,19 @@ internal sealed class Solution(string[] input) : AbstractSolution
     protected override Task<string> SolvePart1Async()
     {
         var (wires, gates) = ParseCircuit(input);
+
+        var answer = ExecuteCircuit(wires, gates);
+        
+        return Task.FromResult(answer.ToString());
+    }
+
+    protected override Task<string> SolvePart2Async()
+    {
+        return Task.FromResult("TBD");
+    }
+
+    private static long ExecuteCircuit(Dictionary<string, int> wires, List<Gate> gates)
+    {
         var queue = new Queue<Gate>();
         
         foreach (var gate in gates)
@@ -21,7 +34,7 @@ internal sealed class Solution(string[] input) : AbstractSolution
 
         while (queue.TryDequeue(out var gate))
         {
-            if (wires[gate.Wire1] == -1 || wires[gate.Wire2] == -1)
+            if (wires[gate.Input1] == -1 || wires[gate.Input2] == -1)
             {
                 queue.Enqueue(gate);
             }
@@ -29,26 +42,19 @@ internal sealed class Solution(string[] input) : AbstractSolution
             {
                 wires[gate.Output] = gate.Operation switch
                 {
-                    "AND" => (wires[gate.Wire1] == 1 && wires[gate.Wire2] == 1) ? 1 : 0,
-                    "XOR" => wires[gate.Wire1] ^ wires[gate.Wire2],
-                    "OR" => (wires[gate.Wire1] == 1 || wires[gate.Wire2] == 1) ? 1 : 0,
+                    "AND" => wires[gate.Input1] & wires[gate.Input2],
+                    "XOR" => wires[gate.Input1] ^ wires[gate.Input2],
+                    "OR" => wires[gate.Input1] | wires[gate.Input2],
                     _ => throw new ArgumentOutOfRangeException()
                 };   
             }
         }
-
-        var zs = wires.Keys
-            .Where(x => x.StartsWith("z")).OrderDescending()
+        
+        var bits = wires.Keys
+            .Where(x => x.StartsWith('z')).OrderDescending()
             .Select(x => wires[x]);
         
-        var answer = Convert.ToInt64(string.Join("", zs), 2);
-        
-        return Task.FromResult(answer.ToString());
-    }
-
-    protected override Task<string> SolvePart2Async()
-    {
-        return Task.FromResult("Not implemented");
+        return Convert.ToInt64(string.Join("", bits), 2);
     }
 
     private static (Dictionary<string, int> wires, List<Gate> gates) ParseCircuit(string[] input)
@@ -91,5 +97,5 @@ internal sealed class Solution(string[] input) : AbstractSolution
         return (wires, gates);
     }
 }
- 
-internal readonly record struct Gate(string Wire1, string Wire2, string Operation, string Output);
+
+internal readonly record struct Gate(string Input1, string Input2, string Operation, string Output);
