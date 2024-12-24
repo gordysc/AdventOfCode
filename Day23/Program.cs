@@ -5,7 +5,7 @@ var input = File.ReadAllLines("Input.txt");
 
 var solution = new Solution(input);
 
-Console.WriteLine("Day 22");
+Console.WriteLine("Day 23");
 
 await solution.SolveAsync();
 
