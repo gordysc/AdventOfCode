@@ -13,13 +13,44 @@ extension Year2025 {
         public init() {}
 
         public func part1(_ input: String) -> Any {
-            // TODO: Implement part 1
-            return "Not implemented"
+            var position = 50;
+            var zeros = 0;
+            
+            for line in input.lines
+            {
+                let direction = line.first!.description;
+                let distance = Int(line.dropFirst())!;
+                let modifier = direction == "R" ? 1 : -1;
+                
+                position += distance * modifier;
+                position = (position + 100) % 100;
+                
+                if (position == 0)
+                {
+                    zeros += 1;
+                }
+            }
+            
+            return zeros.description;
         }
 
         public func part2(_ input: String) -> Any {
-            // TODO: Implement part 2
-            return "Not implemented"
+            var position = 50;
+            var zeros = 0;
+
+            for line in input.lines
+            {
+                let direction = line.first!.description;
+                let distance = Int(line.dropFirst())!;
+                let modifier = direction == "R" ? 1 : -1;
+                
+                let newPosition = direction == "L" ? (100 - position) % 100 : position;
+
+                zeros += (newPosition + distance) / 100;
+                position = (position + distance * modifier % 100 + 100) % 100;
+            }
+
+            return zeros.description;
         }
     }
 }
