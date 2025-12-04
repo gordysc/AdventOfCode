@@ -11,6 +11,7 @@ public let allSolutions: [SolutionInfo] = [
     SolutionInfo(year: 2025, day: 1, title: "Day 1", create: { Year2025.Day01() }),
     SolutionInfo(year: 2025, day: 2, title: "Day 2", create: { Year2025.Day02() }),
     SolutionInfo(year: 2025, day: 3, title: "Day 3", create: { Year2025.Day03() }),
+    SolutionInfo(year: 2025, day: 4, title: "Day 4", create: { Year2025.Day04() }),
 ]
 
 /// Get solutions filtered by year and/or day
